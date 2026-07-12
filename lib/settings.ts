@@ -1,0 +1,5 @@
+import {connectDB,hasDatabase} from "@/lib/db"; import {Setting} from "@/lib/models";
+export type SiteSettings={name:string,email:string,supportEmail:string,phone:string,address:string,siteUrl:string,customHead:string,customCss:string,customJs:string};
+export const defaultSettings:SiteSettings={name:"Visim",email:"visiminfomain166@gmail.com",supportEmail:"supportgolf765@gmail.com",phone:"+(480) 5255-0103",address:"4517 Washington Ave. Manche, Kentucky 39495, Mexico.",siteUrl:process.env.NEXT_PUBLIC_SITE_URL||"http://localhost:3000",customHead:"",customCss:"",customJs:""};
+export async function getSettings(){if(!hasDatabase())return defaultSettings;try{await connectDB();const row:any=await Setting.findOne({key:"site"}).lean();return {...defaultSettings,...(row?.value||{})} as SiteSettings}catch{return defaultSettings}}
+export function interpolate(value:string,settings:SiteSettings){return value.replace(/\{\{site\.([A-Za-z0-9_]+)\}\}/g,(_,k)=>String((settings as unknown as Record<string,unknown>)[k]??""))}

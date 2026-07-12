@@ -1,0 +1,1 @@
+"use client"; export default function LogoutButton(){return <button className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold" onClick={async()=>{await fetch("/api/auth/logout",{method:"POST"});location.href="/login"}}>Sign out</button>}

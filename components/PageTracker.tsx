@@ -1,0 +1,1 @@
+"use client"; import {useEffect} from "react"; export default function PageTracker({slug}:{slug:string}){useEffect(()=>{fetch("/api/history",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({slug,path:location.pathname})}).catch(()=>{})},[slug]);return null}

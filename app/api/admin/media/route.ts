@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server";import {requireAdmin} from "@/lib/auth";import {connectDB} from "@/lib/db";import {Media} from "@/lib/models";export async function POST(req:Request){const u=await requireAdmin();await connectDB();const b=await req.json();const row=await Media.create({...b,createdBy:u.id});return NextResponse.json({row})}

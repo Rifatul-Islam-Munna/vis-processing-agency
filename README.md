@@ -1,19 +1,20 @@
 # Vis Processing Agency
 
-A pixel-faithful Next.js migration of the supplied Visim immigration and visa consulting HTML template, backed by a MongoDB CMS.
+A pixel-faithful Next.js migration of the supplied **Visim immigration and visa consulting HTML template**, backed by a MongoDB CMS.
 
 ## Included
 
-- 25 imported public template pages with the original CSS, JavaScript, fonts and media
-- Next.js 16 App Router and Tailwind CSS 4
-- MongoDB/Mongoose page, settings, user, enquiry, activity and media models
-- Secure role-based authentication with bcrypt and signed HTTP-only JWT cookies
-- Full-page HTML CMS editor with live preview
-- Per-page SEO, canonical URL, Open Graph image, no-index and JSON-LD controls
-- Global settings and global search/replace
-- User account with activity and enquiry history
-- Dynamic sitemap and robots.txt
-- Asset and route integrity verification
+- All 25 supplied HTML pages converted to working Next.js routes
+- Every CSS, JavaScript, font and media file referenced by those pages, packed locally in the repository
+- Next.js 16 App Router and Tailwind CSS 4 for the administration, authentication and account interfaces
+- MongoDB/Mongoose page, setting, user, enquiry, activity and media models
+- Secure bcrypt password hashing and signed HTTP-only JWT sessions
+- Optional public registration and a user history/enquiry dashboard
+- Complete page HTML editor with publishing, preview, page CSS, page JavaScript and head code
+- Per-page SEO title, description, keywords, canonical URL, Open Graph image, no-index and JSON-LD
+- Global site settings and global find/replace across every saved page
+- Dynamic sitemap.xml and robots.txt
+- Public form capture and an admin enquiry inbox
 
 ## Setup
 
@@ -25,24 +26,29 @@ npm run seed
 npm run dev
 ```
 
-`npm install` runs `bootstrap.mjs`. It expands the checked-in, verified Next.js source bundle and restores the matching Visim template assets from the 12 checked-in archive parts. The bundled archive is checksum-validated before extraction. A pinned upstream copy is retained only as a recovery fallback.
+`npm install` verifies and expands the checked-in source and theme archives. It does not depend on a third-party template repository.
 
-The first administrator is created by `npm run seed` using `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME` from `.env.local`.
+## Initial administrator
 
-## Architecture
-
-Every imported public page retains its original body markup and theme assets to preserve the supplied design. The body HTML is stored as an editable MongoDB value, so every visible section can be changed from the admin panel. Admin pages are native React/Tailwind interfaces.
+Set `ADMIN_NAME`, `ADMIN_EMAIL`, and `ADMIN_PASSWORD` in `.env.local`, then run `npm run seed`.
 
 ## Admin routes
 
-- `/admin` dashboard
-- `/admin/pages` content and SEO
-- `/admin/settings` global settings and custom code
-- `/admin/submissions` form enquiries
-- `/admin/users` accounts
-- `/admin/media` MongoDB media library
-- `/admin/global` global content replacement
+- `/admin` — overview
+- `/admin/pages` — complete content and SEO editing
+- `/admin/settings` — global details and custom code
+- `/admin/global` — global content replacement
+- `/admin/enquiries` — public form submissions
+- `/admin/users` — registered accounts
+- `/admin/media` — reusable media URLs
+- `/admin/activity` — authenticated browsing history
 
-## Verification
+## Route mapping
 
-The supplied ZIP contains 25 usable Visim site HTML pages, plus documentation and macOS metadata duplicates. The migrated project was checked for 25 pages, 25 unique routes and 268 referenced local assets. TypeScript, ESLint and the production Next.js build were also run against the generated project.
+`index.html` becomes `/`; `index-2.html` through `index-5.html` become `/home-2` through `/home-5`; every other supplied page uses its filename without `.html`.
+
+The vendor template links to three files that are not present in the ZIP. These are repaired as follows:
+
+- `course.html` → `/course-v1`
+- `price.html` → `/services`
+- `login.html` → `/login`

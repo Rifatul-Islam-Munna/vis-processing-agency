@@ -1,0 +1,1 @@
+import {NextResponse} from "next/server";import {requireAdmin} from "@/lib/auth";import {connectDB} from "@/lib/db";import {Setting} from "@/lib/models";export async function PUT(req:Request){await requireAdmin();await connectDB();const value=await req.json();await Setting.findOneAndUpdate({key:"site"},{value},{upsert:true});return NextResponse.json({ok:true})}

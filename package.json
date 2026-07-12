@@ -3,14 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "predev": "node scripts/restore-template-assets.mjs",
+    "predev": "node bootstrap.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/restore-template-assets.mjs",
+    "prebuild": "node bootstrap.mjs",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "verify": "node scripts/verify-template.mjs",
+    "verify": "tsx scripts/verify.ts",
     "seed": "tsx scripts/seed.ts",
     "postinstall": "node bootstrap.mjs"
   },
@@ -20,8 +19,8 @@
     "lucide-react": "^0.468.0",
     "mongoose": "^8.19.1",
     "next": "16.2.10",
-    "react": "19.2.4",
-    "react-dom": "19.2.4",
+    "react": "19.2.7",
+    "react-dom": "19.2.7",
     "tar": "^7.4.3",
     "zod": "^4.1.12"
   },

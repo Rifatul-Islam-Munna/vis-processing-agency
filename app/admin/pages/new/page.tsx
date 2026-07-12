@@ -1,0 +1,1 @@
+import PageEditor from "@/components/PageEditor";export default function NewPage(){return <><h1 className="mb-6 text-3xl font-black">Create page</h1><PageEditor isNew page={{title:"",slug:"",html:"",published:true,seo:{}}}/></>}

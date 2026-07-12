@@ -1,36 +1,28 @@
 # Vis Processing Agency
 
-A Next.js and MongoDB CMS migration of the supplied **Visim immigration and visa consulting HTML template**.
+Production-oriented Next.js and MongoDB CMS conversion of the supplied Visim HTML template.
 
-## Source ZIP audit
+## Complete ZIP coverage
 
-The supplied ZIP contains:
+- All 25 supplied website HTML pages are retained as public routes.
+- The original 12-part template asset archive is checksum-validated and restored during installation.
+- A separate checksum-validated production source archive restores the exact CMS/application code before development and every build.
+- Original Bootstrap/theme markup, CSS, fonts, imagery, sliders, galleries, menus, popups, counters, accordions, isotope filters, cart panels, and other vendor plugins are preserved.
+- Broken vendor links (`course.html`, `price.html`, `login.html`) and the missing `arrow-6.svg` are repaired.
+- Runtime deployment intentionally excludes only authoring-only SCSS/source maps, documentation, `.DS_Store`, and macOS duplicate metadata.
 
-- 25 usable Visim website HTML pages
-- 497 files under the original `visim/assets` directory
-- separate documentation files
-- macOS `__MACOSX` duplicate metadata
+## Production features
 
-The migration includes all 25 website pages and the CSS, JavaScript, fonts, images and icons needed at runtime. Documentation, macOS metadata and authoring-only source files such as unused SCSS/source maps are not served by the Next.js application.
-
-## Included application features
-
-- Original template markup and runtime styling preserved for the 25 public routes
-- Next.js 16 App Router
-- Tailwind CSS administration, authentication and account interfaces
-- MongoDB/Mongoose models for pages, settings, users, enquiries, activity and media
-- bcrypt password hashing and signed HTTP-only JWT sessions
-- Optional user registration, account history and enquiry history
-- Full-page HTML editor with live visual preview
-- Page creation, publishing, slug editing, custom CSS/JavaScript and head markup
-- SEO title, description, keywords, canonical URL, Open Graph, Twitter cards, no-index and JSON-LD
-- Global site settings and global content replacement
-- Public form capture for the template contact, consultation, comment and checkout forms
-- Enquiry status management and deletion
-- User role, activation and deletion management
-- MongoDB image/PDF upload plus local/external media URL registration
-- Dynamic sitemap and robots.txt
-- Checksum-verified theme asset restoration
+- MongoDB CMS pages with full HTML, head, CSS, JavaScript, draft/publish, live preview, and per-page SEO
+- Global contact/site settings and global content replacement
+- Contact, consultation, comment, newsletter, checkout, and order interfaces connected to MongoDB
+- Page search, product catalog, shop filtering/sorting, persistent cart, quantities, coupons, wishlist actions, and checkout orders
+- Admin management for pages, products, orders, enquiries, media, users, settings, and activity
+- GridFS image/PDF storage
+- bcrypt password hashing, signed HTTP-only JWT sessions, roles, origin checks, and rate limiting
+- User account history, enquiries, and orders
+- Dynamic sitemap, robots.txt, Open Graph, Twitter cards, canonical URLs, and JSON-LD
+- Verification of the 25-route set, preserved HTML structure, forms, direct and nested CSS assets, catalog data, production build, generated TypeScript types, and live HTTP routes
 
 ## Setup
 
@@ -42,42 +34,8 @@ npm run seed
 npm run dev
 ```
 
-Set a real MongoDB connection and a random authentication secret of at least 32 characters in `.env.local`.
+Use a real MongoDB URI and an `AUTH_SECRET` containing at least 32 random characters. Change the administrator credentials before running `npm run seed`.
 
-## Initial administrator
+## Deployment
 
-Set `ADMIN_NAME`, `ADMIN_EMAIL` and `ADMIN_PASSWORD`, then run:
-
-```bash
-npm run seed
-```
-
-## Main routes
-
-- `/admin` — overview
-- `/admin/pages` — complete page content and SEO
-- `/admin/settings` — global details and custom code
-- `/admin/global` — global content replacement
-- `/admin/enquiries` — captured form submissions
-- `/admin/users` — account roles and access
-- `/admin/media` — uploaded and linked media
-- `/admin/activity` — authenticated browsing history
-- `/account` — user history
-
-## Route mapping
-
-`index.html` becomes `/`; `index-2.html` through `index-5.html` become `/home-2` through `/home-5`; every other supplied page uses its filename without `.html`.
-
-The vendor ZIP links to three HTML files that it does not include. They are repaired as follows:
-
-- `course.html` → `/course-v1`
-- `price.html` → `/services`
-- `login.html` → `/login`
-
-The missing vendor `arrow-6.svg` reference is also replaced with a supplied matching arrow asset, and `/site.webmanifest` is provided.
-
-## Verification
-
-`npm run verify` checks the exact 25-route set, duplicate or empty pages, unresolved vendor links, form preservation, direct HTML asset references, nested CSS asset references, the materialized theme file count and required CMS/authentication files.
-
-The GitHub Actions workflow additionally runs TypeScript checking, a production Next.js build and live HTTP smoke tests for all 25 public pages, authentication pages, SEO endpoints and core CSS/JavaScript assets. On success it commits `VERIFICATION.md`, `package-lock.json` and the materialized assets to `main`.
+Node.js 20.9 or newer is required. `postinstall` and `prebuild` restore and checksum-check the production source and original template assets, so standard Node/Vercel-style deployments receive the complete application even though the large assets are stored as repository archive parts.

@@ -1,0 +1,110 @@
+name: Production verification
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: vis-production-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install exact application dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --no-audit --no-fund
+          fi
+
+      - name: Verify ZIP conversion and runtime assets
+        run: npm run verify
+
+      - name: Production dependency audit
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Build production application
+        env:
+          AUTH_SECRET: production-build-secret-that-is-at-least-thirty-two-characters
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          ALLOW_REGISTRATION: "true"
+        run: npm run build
+
+      - name: Type-check generated application types
+        run: npm run typecheck
+
+      - name: Smoke test all public and system routes
+        env:
+          AUTH_SECRET: production-build-secret-that-is-at-least-thirty-two-characters
+          NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+          ALLOW_REGISTRATION: "true"
+        shell: bash
+        run: |
+          npm run start > /tmp/vis-server.log 2>&1 &
+          SERVER_PID=$!
+          cleanup() { kill "$SERVER_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          curl --retry 30 --retry-connrefused --retry-delay 1 --fail --silent http://127.0.0.1:3000/ >/dev/null
+          routes=(
+            / /home-2 /home-3 /home-4 /home-5 /about /blog-classic /blog-details
+            /blog-grid /cart /checkout /contact /country-details /country-list
+            /course-details /course-v1 /error /faq /services-details /services
+            /shop-details /shop /team-details /team /testimonial /login /register
+            /search /robots.txt /sitemap.xml /site.webmanifest
+            /assets/css/main.css /assets/js/main.js /assets/js/cms-runtime.js
+          )
+          for route in "${routes[@]}"; do
+            echo "Checking $route"
+            curl --fail --silent "http://127.0.0.1:3000$route" >/dev/null
+          done
+
+      - name: Record verified production build
+        shell: bash
+        run: |
+          cat > VERIFICATION.md <<EOF
+          # Production verification passed
+
+          Source commit: ${GITHUB_SHA}
+
+          The automated production pipeline passed:
+
+          - checksum restoration of the supplied ZIP runtime assets
+          - exact 25-page route and HTML structure validation
+          - form, catalog, and direct/nested asset reference validation
+          - high-severity production dependency audit
+          - Next.js production build
+          - generated TypeScript type checking
+          - live HTTP smoke checks for all 25 public pages, authentication, search, SEO endpoints, and core CSS/JavaScript assets
+          EOF
+
+      - name: Commit lockfile and verification evidence
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json VERIFICATION.md
+          if git diff --cached --quiet; then
+            echo "Verification evidence is already current."
+            exit 0
+          fi
+          git commit -m "Verify production build [skip ci]"
+          git push origin HEAD:main

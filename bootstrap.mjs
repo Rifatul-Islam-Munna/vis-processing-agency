@@ -5,12 +5,22 @@ import { brotliDecompressSync } from "node:zlib";
 
 const root = process.cwd();
 const vendor = path.join(root, "vendor");
-const ASSET_PART_COUNT = 12;
-const ASSET_ARCHIVE_SHA256 = "b000263a7d7285491f4fb4aee177b135c03157093e0c3f94a623913a9b152473";
+
+function sha256(value) {
+  return createHash("sha256").update(value).digest("hex");
+}
+
+function safeOutput(destination, relative) {
+  const base = path.resolve(destination);
+  const output = path.resolve(base, relative.replace(/^\.\//, ""));
+  if (output !== base && !output.startsWith(`${base}${path.sep}`)) {
+    throw new Error(`Unsafe archive path: ${relative}`);
+  }
+  return output;
+}
 
 function extractTar(buffer, destination) {
   let offset = 0;
-  const destinationRoot = path.resolve(destination) + path.sep;
   while (offset + 512 <= buffer.length) {
     const header = buffer.subarray(offset, offset + 512);
     if (header.every((byte) => byte === 0)) break;
@@ -18,11 +28,10 @@ function extractTar(buffer, destination) {
       header.subarray(start, start + length).toString("utf8").replace(/\0.*$/s, "");
     const name = readString(0, 100);
     const prefix = readString(345, 155);
-    const relative = (prefix ? `${prefix}/${name}` : name).replace(/^\.\//, "");
+    const relative = prefix ? `${prefix}/${name}` : name;
     const size = Number.parseInt(readString(124, 12).trim() || "0", 8);
     const type = String.fromCharCode(header[156] || 48);
-    const output = path.resolve(destination, relative);
-    if (!output.startsWith(destinationRoot)) throw new Error(`Unsafe archive path: ${relative}`);
+    const output = safeOutput(destination, relative);
     offset += 512;
     if (type === "5") fs.mkdirSync(output, { recursive: true });
     else if (type === "0" || type === "\0") {
@@ -33,25 +42,66 @@ function extractTar(buffer, destination) {
   }
 }
 
-function restoreAssets() {
-  if (!fs.existsSync(vendor)) throw new Error("Missing checked-in vendor asset archive");
+function restoreManifestArchive(label, destination) {
+  const manifestPath = path.join(vendor, `${label}.manifest.json`);
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
   const parts = fs.readdirSync(vendor)
-    .filter((name) => name.startsWith("template-assets.part-"))
+    .filter((name) => name.startsWith(`${label}.part-`) && name.endsWith(".b64"))
     .sort();
-  if (parts.length !== ASSET_PART_COUNT) {
-    throw new Error(`Expected ${ASSET_PART_COUNT} template asset parts, found ${parts.length}`);
+  if (parts.length !== manifest.parts) {
+    throw new Error(`Incomplete ${label}: expected ${manifest.parts} parts, found ${parts.length}`);
   }
   const encoded = parts.map((name) => fs.readFileSync(path.join(vendor, name), "utf8").trim()).join("");
-  const checksum = createHash("sha256").update(encoded).digest("hex");
-  if (checksum !== ASSET_ARCHIVE_SHA256) throw new Error("Template asset archive checksum mismatch");
-  const publicDir = path.join(root, "public");
-  fs.mkdirSync(publicDir, { recursive: true });
-  extractTar(brotliDecompressSync(Buffer.from(encoded, "base64")), publicDir);
+  if (sha256(encoded) !== manifest.encodedSha256) throw new Error(`${label} encoded checksum mismatch`);
+  const tar = brotliDecompressSync(Buffer.from(encoded, "base64"));
+  if (sha256(tar) !== manifest.tarSha256) throw new Error(`${label} tar checksum mismatch`);
+  extractTar(tar, destination);
+  return manifest;
 }
 
-const sourceMarker = path.join(root, "content", "page-index.ts");
-if (!fs.existsSync(sourceMarker)) throw new Error("Next.js source files are missing");
+function restoreLegacyAssets() {
+  const expectedParts = 12;
+  const expectedChecksum = "b000263a7d7285491f4fb4aee177b135c03157093e0c3f94a623913a9b152473";
+  const parts = fs.readdirSync(vendor)
+    .filter((name) => /^template-assets\.part-\d+\.txt$/.test(name))
+    .sort();
+  if (parts.length !== expectedParts) {
+    throw new Error(`Incomplete template asset bundle: expected ${expectedParts} parts, found ${parts.length}`);
+  }
+  const encoded = parts.map((name) => fs.readFileSync(path.join(vendor, name), "utf8").trim()).join("");
+  if (sha256(encoded) !== expectedChecksum) throw new Error("Template asset bundle checksum mismatch");
+  const tar = brotliDecompressSync(Buffer.from(encoded, "base64"));
+  fs.mkdirSync(path.join(root, "public"), { recursive: true });
+  extractTar(tar, path.join(root, "public"));
+}
+
+if (!fs.existsSync(vendor)) throw new Error("Missing vendor archives");
+
+const sourceManifest = path.join(vendor, "source-v4.manifest.json");
+if (!fs.existsSync(sourceManifest)) throw new Error("Missing production source manifest");
+const source = restoreManifestArchive("source-v4", root);
+console.log(`Restored verified production source (${source.files} files).`);
+
 const assetMarker = path.join(root, "public", "assets", "css", "main.css");
-if (!fs.existsSync(assetMarker)) restoreAssets();
-if (!fs.existsSync(assetMarker)) throw new Error("Visim template assets could not be restored");
-console.log("Verified Next.js source and Visim template assets are ready.");
+if (!fs.existsSync(assetMarker)) {
+  const modernManifest = path.join(vendor, "template-assets.manifest.json");
+  if (fs.existsSync(modernManifest)) {
+    const assets = restoreManifestArchive("template-assets", path.join(root, "public"));
+    console.log(`Restored verified ZIP runtime assets (${assets.runtimeFiles ?? "complete"} files).`);
+  } else {
+    restoreLegacyAssets();
+    console.log("Restored checksum-verified ZIP runtime assets from 12 parts.");
+  }
+}
+
+for (const required of [
+  "app/(site)/[[...slug]]/route.ts",
+  "content/default-pages.json",
+  "public/assets/css/main.css",
+  "public/assets/js/main.js",
+  "public/assets/js/cms-runtime.js",
+]) {
+  if (!fs.existsSync(path.join(root, required))) throw new Error(`Restoration failed: ${required}`);
+}
+
+console.log("Production source and supplied ZIP features are ready.");

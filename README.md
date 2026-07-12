@@ -25,7 +25,7 @@ npm run seed
 npm run dev
 ```
 
-`npm install` runs `bootstrap.mjs`. It expands the checked-in, verified Next.js source bundle and restores the matching Visim template assets. The bootstrap validates the complete local asset archive when all 36 parts are available; otherwise it restores the exact original assets from the pinned matching template commit.
+`npm install` runs `bootstrap.mjs`. It expands the checked-in, verified Next.js source bundle and restores the matching Visim template assets from the 12 checked-in archive parts. The bundled archive is checksum-validated before extraction. A pinned upstream copy is retained only as a recovery fallback.
 
 The first administrator is created by `npm run seed` using `ADMIN_EMAIL`, `ADMIN_PASSWORD` and `ADMIN_NAME` from `.env.local`.
 
@@ -45,4 +45,4 @@ Every imported public page retains its original body markup and theme assets to 
 
 ## Verification
 
-The imported project was checked for 25 pages, 25 unique routes and 268 referenced local assets. TypeScript, ESLint and the production Next.js build were also run against the generated project.
+The supplied ZIP contains 25 usable Visim site HTML pages, plus documentation and macOS metadata duplicates. The migrated project was checked for 25 pages, 25 unique routes and 268 referenced local assets. TypeScript, ESLint and the production Next.js build were also run against the generated project.

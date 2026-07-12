@@ -7,7 +7,7 @@ import { brotliDecompressSync } from "node:zlib";
 
 const root = process.cwd();
 const vendor = path.join(root, "vendor");
-const ASSET_PART_COUNT = 36;
+const ASSET_PART_COUNT = 12;
 const ASSET_ARCHIVE_SHA256 = "b000263a7d7285491f4fb4aee177b135c03157093e0c3f94a623913a9b152473";
 const UPSTREAM_REPOSITORY = "https://github.com/Kurosagiiii/Study-Abroad.git";
 const UPSTREAM_COMMIT = "d5ebee6ff7148d5e08985bd2c66f0ed973fb91f5";
@@ -49,7 +49,9 @@ function restoreSource() {
 
 function restoreAssetsFromArchive() {
   const { parts, encoded } = readParts("template-assets.part-");
-  if (parts.length !== ASSET_PART_COUNT) return false;
+  if (parts.length !== ASSET_PART_COUNT) {
+    throw new Error(`Expected ${ASSET_PART_COUNT} template asset parts, found ${parts.length}`);
+  }
   const checksum = createHash("sha256").update(encoded).digest("hex");
   if (checksum !== ASSET_ARCHIVE_SHA256) throw new Error("Template asset archive checksum mismatch");
   extractTar(brotliDecompressSync(Buffer.from(encoded, "base64")), path.join(root, "public"));
@@ -88,7 +90,10 @@ restoreSource();
 const assetEntry = path.join(root, "public", "assets", "css", "main.css");
 let usingOriginalAssets = false;
 if (!fs.existsSync(assetEntry)) {
-  if (!restoreAssetsFromArchive()) {
+  try {
+    restoreAssetsFromArchive();
+  } catch (error) {
+    console.warn(`Bundled asset restore failed: ${error.message}`);
     restoreAssetsFromPinnedRepository();
     usingOriginalAssets = true;
   }

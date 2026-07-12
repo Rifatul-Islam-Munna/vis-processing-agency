@@ -9,6 +9,7 @@ on:
       - components/**
       - content/**
       - lib/**
+      - next-env.d.ts
       - public/site.webmanifest
       - scripts/**
       - bootstrap.mjs
@@ -60,15 +61,15 @@ jobs:
       - name: Verify imported pages and assets
         run: npm run verify
 
-      - name: Type-check
-        run: npm run typecheck
-
       - name: Production build
         env:
           AUTH_SECRET: build-only-secret-that-is-longer-than-thirty-two-characters
           NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
           ALLOW_REGISTRATION: "true"
         run: npm run build
+
+      - name: Type-check generated application types
+        run: npm run typecheck
 
       - name: Production route smoke test
         env:
@@ -107,8 +108,7 @@ jobs:
           - ZIP asset restoration and checksum validation
           - 25-page and route integrity verification
           - local asset reference verification
-          - TypeScript checking
-          - Next.js production build
+          - Next.js production build and TypeScript checking
           - live HTTP smoke checks for every imported public route, authentication pages, SEO endpoints and core theme assets
           EOF
 

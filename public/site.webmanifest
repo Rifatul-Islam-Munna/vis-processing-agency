@@ -1,0 +1,16 @@
+{
+  "name": "Vis Processing Agency",
+  "short_name": "Visim",
+  "description": "Immigration and visa consulting services",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/assets/img/favicon.webp",
+      "sizes": "any",
+      "type": "image/webp"
+    }
+  ]
+}

@@ -1,1 +1,32 @@
-import {connectDB,hasDatabase} from "@/lib/db";import {Enquiry} from "@/lib/models";export default async function Enquiries(){let rows:any[]=[];if(hasDatabase())try{await connectDB();rows=await Enquiry.find({}).sort({createdAt:-1}).limit(200).lean()}catch{}return <><h1 className="text-3xl font-black">Enquiries</h1><p className="mb-6 mt-1 text-slate-500">Messages captured from all public forms.</p><div className="space-y-3">{rows.length?rows.map((r:any)=><article key={String(r._id)} className="rounded-2xl border border-slate-200 bg-white p-5"><div className="flex flex-wrap justify-between gap-2"><h2 className="font-black">{r.subject||r.name||"Website enquiry"}</h2><time className="text-xs text-slate-500">{new Date(r.createdAt).toLocaleString()}</time></div><p className="mt-1 text-sm text-slate-500">{r.email} {r.phone&&`• ${r.phone}`} • /{r.pageSlug}</p><p className="mt-4 whitespace-pre-wrap">{r.message||JSON.stringify(r.data)}</p></article>):<Empty/>}</div></>}function Empty(){return <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center text-slate-500">No enquiries yet.</div>}
+import EnquiryManager from "@/components/EnquiryManager";
+import { connectDB, hasDatabase } from "@/lib/db";
+import { Enquiry } from "@/lib/models";
+
+export default async function EnquiriesPage() {
+  let rows: any[] = [];
+  if (hasDatabase()) {
+    try {
+      await connectDB();
+      rows = await Enquiry.find({}).sort({ createdAt: -1 }).limit(300).lean();
+    } catch {}
+  }
+
+  const items = rows.map((row) => ({
+    id: String(row._id),
+    pageSlug: String(row.pageSlug || ""),
+    name: String(row.name || ""),
+    email: String(row.email || ""),
+    phone: String(row.phone || ""),
+    subject: String(row.subject || ""),
+    message: String(row.message || ""),
+    data: JSON.parse(JSON.stringify(row.data || {})),
+    status: ["new", "read", "closed"].includes(row.status) ? row.status : "new",
+    createdAt: new Date(row.createdAt).toISOString(),
+  }));
+
+  return <>
+    <h1 className="text-3xl font-black">Enquiries</h1>
+    <p className="mb-6 mt-1 text-slate-500">Review, update and remove submissions captured from public forms.</p>
+    <EnquiryManager initialItems={items} />
+  </>;
+}
